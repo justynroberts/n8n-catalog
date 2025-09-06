@@ -1,62 +1,47 @@
 name: Deploy to Production
 
 on:
-  workflow_dispatch:
-    inputs:
-      deploy_message:
-        description: 'Deployment message'
-        required: false
-        default: 'Manual deployment'
-
   push:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - '.github/**'
+    branches: [main]
+  workflow_dispatch: # Allow manual triggering
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy to Remote Server
+    if: "contains(github.event.head_commit.message, '[deploy]') || github.event_name == 'workflow_dispatch'"
     
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Deploy to Remote Server
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
-        port: ${{ secrets.PORT || 22 }}
-        script: |
-          echo "🚀 Starting deployment..."
-          
-          # Navigate to deployment directory
-          cd /opt || exit 1
-          
-          # Remove existing installation
-          if [ -d "n8n-catalog" ]; then
-            cd n8n-catalog
-            docker-compose -f docker-compose.prod.yml down || true
-            cd ..
-            rm -rf n8n-catalog
-          fi
-          
-          # Clone repository
-          git clone https://github.com/justynroberts/n8n-catalog.git
-          cd n8n-catalog
-          
-          # Ensure traefik network exists
-          docker network ls | grep -q traefik || docker network create traefik
-          
-          # Deploy
-          docker-compose -f docker-compose.prod.yml up --build -d
-          
-          # Wait and check
-          sleep 15
-          docker ps | grep n8n-catalog
-          
-          echo "✅ Deployment complete!"
-          echo "🌐 Application available at: https://catalog.fintonlabs.com"
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: 217.154.58.180
+          username: justyn
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /home/justyn/work/n8n-catalog
+            echo "🚀 Starting deployment..."
+            git pull origin main
+            chmod +x deploy-fix.sh
+            ./deploy-fix.sh
+            echo "✅ Deployment completed"
+            
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: 217.154.58.180
+          username: justyn
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /home/justyn/work/n8n-catalog
+            echo "📊 Container status:"
+            docker-compose -f docker-compose.prod.yml ps
+            echo "📋 Recent logs:"
+            docker-compose -f docker-compose.prod.yml logs --tail=10
+            
+      - name: Test HTTPS endpoint
+        run: |
+          echo "🔒 Testing HTTPS endpoint..."
+          curl -f -s -I https://catalog.fintonlabs.com || exit 1
+          echo "✅ HTTPS endpoint is responding"
