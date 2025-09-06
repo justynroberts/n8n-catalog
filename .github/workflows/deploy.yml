@@ -1,0 +1,62 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_message:
+        description: 'Deployment message'
+        required: false
+        default: 'Manual deployment'
+
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Remote Server
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Deploy to Remote Server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.PORT || 22 }}
+        script: |
+          echo "🚀 Starting deployment..."
+          
+          # Navigate to deployment directory
+          cd /opt || exit 1
+          
+          # Remove existing installation
+          if [ -d "n8n-catalog" ]; then
+            cd n8n-catalog
+            docker-compose -f docker-compose.prod.yml down || true
+            cd ..
+            rm -rf n8n-catalog
+          fi
+          
+          # Clone repository
+          git clone https://github.com/justynroberts/n8n-catalog.git
+          cd n8n-catalog
+          
+          # Ensure traefik network exists
+          docker network ls | grep -q traefik || docker network create traefik
+          
+          # Deploy
+          docker-compose -f docker-compose.prod.yml up --build -d
+          
+          # Wait and check
+          sleep 15
+          docker ps | grep n8n-catalog
+          
+          echo "✅ Deployment complete!"
+          echo "🌐 Application available at: https://catalog.fintonlabs.com"
