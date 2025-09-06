@@ -1,17 +1,26 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 import { WorkflowAnalysis } from '@/types/workflow';
 
-const DB_PATH = path.join(process.cwd(), 'catalog.db');
+const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'workflows.db');
 
 export class CatalogDatabase {
   private static instance: CatalogDatabase;
   private db: Database.Database;
 
   private constructor() {
+    // Ensure the directory exists
+    const dbDir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+    
+    console.log(`Initializing database at: ${DB_PATH}`);
     this.db = new Database(DB_PATH);
     this.db.pragma('journal_mode = WAL'); // Better performance
     this.initializeTables();
+    console.log('Database initialized successfully');
   }
 
   static getInstance(): CatalogDatabase {

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n8n-catalog Deployment</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .command-box {
+            background: #1a202c;
+            color: #68d391;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        .step {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #2d3748;
+        }
+        button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover {
+            background: #3182ce;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .status.success { background: #c6f6d5; color: #22543d; }
+        .status.error { background: #fed7d7; color: #742a2a; }
+        .status.info { background: #bee3f8; color: #2a4365; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 n8n-catalog Deployment</h1>
+        
+        <div class="status info">
+            <strong>Ready to deploy to:</strong> catalog.fintonlabs.com
+        </div>
+
+        <div class="step">
+            <h3>📋 Step 1: Copy the Deployment Command</h3>
+            <p>Copy this command and run it on your remote server (217.154.58.180):</p>
+            <div class="command-box" id="deployCommand">
+curl -sSL https://raw.githubusercontent.com/justynroberts/n8n-catalog/main/deploy-one-liner.sh | bash
+            </div>
+            <button onclick="copyCommand()">📋 Copy Command</button>
+        </div>
+
+        <div class="step">
+            <h3>🔐 Step 2: SSH to Your Server</h3>
+            <p>Connect to your remote server:</p>
+            <div class="command-box">
+ssh root@217.154.58.180
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>⚡ Step 3: Execute Deployment</h3>
+            <p>Paste and run the copied command. The deployment will:</p>
+            <ul>
+                <li>✅ Clone the latest code from GitHub</li>
+                <li>✅ Build the Docker container</li>
+                <li>✅ Configure Traefik integration</li>
+                <li>✅ Start the application</li>
+                <li>✅ Verify deployment status</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>🌐 Step 4: Verify Deployment</h3>
+            <p>After deployment, your application will be available at:</p>
+            <div class="command-box">
+https://catalog.fintonlabs.com
+            </div>
+            <button onclick="window.open('https://catalog.fintonlabs.com', '_blank')">🌐 Open Application</button>
+        </div>
+
+        <div class="status info">
+            <strong>Need Help?</strong> Check the repository at 
+            <a href="https://github.com/justynroberts/n8n-catalog" target="_blank">GitHub</a>
+        </div>
+    </div>
+
+    <script>
+        function copyCommand() {
+            const command = document.getElementById('deployCommand').textContent.trim();
+            navigator.clipboard.writeText(command).then(() => {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ Copied!';
+                button.style.background = '#48bb78';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#4299e1';
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy command. Please copy manually.');
+            });
+        }
+    </script>
+</body>
+</html>

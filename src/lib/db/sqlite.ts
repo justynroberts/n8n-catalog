@@ -9,16 +9,30 @@ export class SQLiteDatabase {
   private db: Database.Database;
 
   private constructor() {
-    // Ensure data directory exists
-    const fs = require('fs');
-    const dataDir = path.dirname(DB_PATH);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
+    try {
+      // Ensure data directory exists
+      const fs = require('fs');
+      const dataDir = path.dirname(DB_PATH);
+      console.log(`Database path: ${DB_PATH}`);
+      console.log(`Data directory: ${dataDir}`);
+      
+      if (!fs.existsSync(dataDir)) {
+        console.log(`Creating data directory: ${dataDir}`);
+        fs.mkdirSync(dataDir, { recursive: true });
+      } else {
+        console.log(`Data directory already exists: ${dataDir}`);
+      }
 
-    this.db = new Database(DB_PATH);
-    this.db.pragma('journal_mode = WAL'); // Better performance
-    this.initializeTables();
+      console.log(`Initializing SQLite database at: ${DB_PATH}`);
+      this.db = new Database(DB_PATH);
+      this.db.pragma('journal_mode = WAL'); // Better performance
+      this.initializeTables();
+      this.initializeSampleData();
+      console.log('SQLite database initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+      throw error;
+    }
   }
 
   static getInstance(): SQLiteDatabase {
@@ -150,6 +164,145 @@ export class SQLiteDatabase {
       CREATE INDEX IF NOT EXISTS idx_import_sessions_started ON import_sessions(started_at DESC);
       CREATE INDEX IF NOT EXISTS idx_import_sessions_last_update ON import_sessions(last_update DESC);
     `);
+  }
+
+  private initializeSampleData(): void {
+    try {
+      // Check if we already have workflows
+      const count = this.getWorkflowCount();
+      if (count > 0) {
+        console.log(`Database already has ${count} workflows, skipping sample data initialization`);
+        return;
+      }
+
+      console.log('Initializing sample workflow data...');
+      
+      const sampleWorkflows: WorkflowAnalysis[] = [
+        {
+          id: 'sample-webhook-to-slack',
+          name: 'Webhook to Slack Notification',
+          description: 'Receives webhook data and sends formatted notifications to Slack',
+          category: 'notifications',
+          tags: ['webhook', 'slack', 'notifications'],
+          complexity: 'Simple' as const,
+          nodeCount: 3,
+          nodes: [
+            { type: 'n8n-nodes-base.webhook', count: 1, name: 'Webhook' },
+            { type: 'n8n-nodes-base.function', count: 1, name: 'Format Message' },
+            { type: 'n8n-nodes-base.slack', count: 1, name: 'Slack' }
+          ],
+          dependencies: ['Slack'],
+          triggers: ['webhook'],
+          actions: ['sendMessage'],
+          integrations: ['Slack'],
+          estimatedRuntime: '1-2 minutes',
+          useCase: 'Receive alerts or notifications and forward them to Slack channels',
+          aiGenerated: false,
+          lastAnalyzed: new Date().toISOString(),
+          inputRequirements: ['Webhook URL configuration'],
+          expectedOutputs: ['Slack message posted'],
+          dataFlow: 'Webhook → Data Processing → Slack Notification',
+          businessLogic: 'Simple notification forwarding system',
+          errorHandling: 'Basic error handling with retry logic'
+        },
+        {
+          id: 'sample-google-sheets-sync',
+          name: 'Google Sheets Data Sync',
+          description: 'Syncs data between Google Sheets and external APIs',
+          category: 'data-sync',
+          tags: ['google-sheets', 'api', 'sync'],
+          complexity: 'Medium' as const,
+          nodeCount: 5,
+          nodes: [
+            { type: 'n8n-nodes-base.cron', count: 1, name: 'Schedule' },
+            { type: 'n8n-nodes-base.googleSheets', count: 2, name: 'Google Sheets' },
+            { type: 'n8n-nodes-base.httpRequest', count: 1, name: 'HTTP Request' },
+            { type: 'n8n-nodes-base.function', count: 1, name: 'Data Transform' }
+          ],
+          dependencies: ['Google Sheets API'],
+          triggers: ['schedule'],
+          actions: ['readSheets', 'updateSheets', 'httpRequest'],
+          integrations: ['Google Sheets', 'HTTP API'],
+          estimatedRuntime: '5-10 minutes',
+          useCase: 'Automated data synchronization between spreadsheets and external systems',
+          aiGenerated: false,
+          lastAnalyzed: new Date().toISOString(),
+          inputRequirements: ['Google Sheets credentials', 'API endpoint'],
+          expectedOutputs: ['Updated spreadsheet data'],
+          dataFlow: 'Schedule → Read Sheets → Transform → API Call → Update Sheets',
+          businessLogic: 'Bidirectional data sync with transformation',
+          errorHandling: 'Retry mechanism and error logging'
+        },
+        {
+          id: 'sample-email-processing',
+          name: 'Email Processing Pipeline',
+          description: 'Advanced email processing with attachments and conditional routing',
+          category: 'email',
+          tags: ['email', 'attachments', 'processing'],
+          complexity: 'Complex' as const,
+          nodeCount: 8,
+          nodes: [
+            { type: 'n8n-nodes-base.emailReadImap', count: 1, name: 'Email Trigger' },
+            { type: 'n8n-nodes-base.if', count: 2, name: 'Conditions' },
+            { type: 'n8n-nodes-base.function', count: 2, name: 'Processing' },
+            { type: 'n8n-nodes-base.httpRequest', count: 1, name: 'API Call' },
+            { type: 'n8n-nodes-base.googleDrive', count: 1, name: 'File Storage' },
+            { type: 'n8n-nodes-base.slack', count: 1, name: 'Notification' }
+          ],
+          dependencies: ['Email Server', 'Google Drive', 'Slack'],
+          triggers: ['emailReceived'],
+          actions: ['processEmail', 'saveAttachment', 'sendNotification'],
+          integrations: ['IMAP Email', 'Google Drive', 'Slack'],
+          estimatedRuntime: '3-7 minutes',
+          useCase: 'Automated email processing with attachment handling and smart routing',
+          aiGenerated: false,
+          lastAnalyzed: new Date().toISOString(),
+          inputRequirements: ['IMAP credentials', 'Google Drive API', 'Slack webhook'],
+          expectedOutputs: ['Processed emails', 'Saved attachments', 'Notifications'],
+          dataFlow: 'Email → Conditional Logic → Processing → Storage → Notification',
+          businessLogic: 'Complex email routing based on content and attachments',
+          errorHandling: 'Comprehensive error handling with fallback options'
+        }
+      ];
+
+      // Add some additional variety
+      for (let i = 4; i <= 20; i++) {
+        const categories = ['automation', 'data-processing', 'integrations', 'monitoring'];
+        const complexities: ('Simple' | 'Medium' | 'Complex')[] = ['Simple', 'Medium', 'Complex'];
+        const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+        const randomComplexity = complexities[Math.floor(Math.random() * complexities.length)];
+        
+        sampleWorkflows.push({
+          id: `sample-workflow-${i}`,
+          name: `Sample ${randomCategory.charAt(0).toUpperCase() + randomCategory.slice(1)} Workflow ${i}`,
+          description: `A sample ${randomComplexity.toLowerCase()} workflow for ${randomCategory}`,
+          category: randomCategory,
+          tags: [randomCategory, randomComplexity.toLowerCase()],
+          complexity: randomComplexity,
+          nodeCount: randomComplexity === 'Simple' ? 2 : randomComplexity === 'Medium' ? 4 : 6,
+          nodes: [
+            { type: 'n8n-nodes-base.webhook', count: 1, name: 'Trigger' },
+            { type: 'n8n-nodes-base.function', count: 1, name: 'Process' }
+          ],
+          dependencies: [],
+          triggers: ['webhook'],
+          actions: ['process'],
+          integrations: ['HTTP'],
+          estimatedRuntime: '1-5 minutes',
+          useCase: `Sample ${randomCategory} use case`,
+          aiGenerated: false,
+          lastAnalyzed: new Date().toISOString()
+        });
+      }
+
+      // Save all sample workflows
+      this.saveWorkflows(sampleWorkflows, 'sample');
+      console.log(`Initialized ${sampleWorkflows.length} sample workflows`);
+      
+    } catch (error) {
+      console.error('Failed to initialize sample data:', error);
+      // Don't throw - sample data is optional
+    }
   }
 
   // Workflow operations
