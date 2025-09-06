@@ -1,0 +1,8 @@
+# COPY AND PASTE THIS INTO YOUR SERVER TERMINAL:
+
+cd /home/justyn/work/n8n-catalog && git pull origin main && chmod +x deploy-fix.sh && ./deploy-fix.sh
+
+# OR if that fails, run this manually:
+
+cd /home/justyn/work/n8n-catalog && git pull origin main && docker-compose -f docker-compose.prod.yml down && sudo mkdir -p data uploads && sudo chown -R justyn:justyn data uploads && docker-compose -f docker-compose.prod.yml up -d --build && docker-compose -f docker-compose.prod.yml logs --tail=20
+
