@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  n8n-catalog:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: n8n-catalog
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist SQLite database with named volume
+      - n8n-catalog-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATABASE_PATH=/app/data/workflows.db
+      - NEXT_TELEMETRY_DISABLED=1
+      - JWT_SECRET=production-jwt-secret-key-change-in-production-12345
+      # Uncomment and set your OpenAI API key for AI analysis
+      # - OPENAI_API_KEY=your-api-key-here
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.docker.compose.project=n8n-catalog"
+      
+  # Optional: Add a reverse proxy for production
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: n8n-catalog-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/ssl/certs:ro
+  #   depends_on:
+  #     - n8n-catalog
+  #   restart: unless-stopped
+
+volumes:
+  n8n-catalog-data:
+    driver: local
+
+networks:
+  default:
+    name: n8n-catalog-network

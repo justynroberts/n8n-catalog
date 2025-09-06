@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Next.js build output
+.next/
+out/
+
+# Production build
+build/
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.test
+
+# Database
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Uploads
+uploads/
+
+# Docker
+.dockerignore
+
+# Development
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+
+# Local Traefik data
+traefik-data/
+docker-compose.local-traefik.yml

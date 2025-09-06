@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  n8n-catalog:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: n8n-catalog
+    restart: unless-stopped
+    # No ports exposed directly - Traefik will handle routing
+    volumes:
+      - ./data:/app/data  # Persist SQLite database
+      - ./uploads:/app/uploads  # Persist any uploaded files
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - DATABASE_PATH=/app/data/workflows.db
+      - JWT_SECRET=${JWT_SECRET:-generate-strong-jwt-secret-for-production}
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+    networks:
+      - traefik
+    labels:
+      # Enable Traefik
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      
+      # HTTP Router
+      - "traefik.http.routers.n8n-catalog.rule=Host(`catalog.fintonlabs.com`)"
+      - "traefik.http.routers.n8n-catalog.entrypoints=websecure"
+      - "traefik.http.routers.n8n-catalog.tls=true"
+      - "traefik.http.routers.n8n-catalog.tls.certresolver=letsencrypt"
+      
+      # Service
+      - "traefik.http.services.n8n-catalog.loadbalancer.server.port=3000"
+      
+      # Middlewares for security
+      - "traefik.http.routers.n8n-catalog.middlewares=secure-headers,compression"
+      - "traefik.http.middlewares.secure-headers.headers.customRequestHeaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.secure-headers.headers.sslRedirect=true"
+      - "traefik.http.middlewares.secure-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.secure-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.compression.compress=true"
+      
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  traefik:
+    external: true
+
+volumes:
+  data:
+    driver: local
+  uploads:
+    driver: local
